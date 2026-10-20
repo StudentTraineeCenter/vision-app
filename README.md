@@ -52,24 +52,24 @@ vision-app/
 ├── requirements.txt        # Seznam závislostí pro pip
 │
 ├── assets/                 # Statické zdroje a testovací data
-│   └── sample.dng          # Vzorový .dng soubor pro vývoj a testování[cite: 5]
+│   └── sample.dng          # Vzorový .dng soubor pro vývoj a testování
 │
 ├── src/                    # Hlavní zdrojový kód aplikace
-│   ├── main.py             # Vstupní bod – inicializace a spustitelná Flet aplikace[cite: 5]
+│   ├── main.py             # Vstupní bod – inicializace a spustitelná Flet aplikace
 │   │
-│   ├── ui/                 # Uživatelské rozhraní (Flet / Windows 11 Fluent)[cite: 5]
+│   ├── ui/                 # Uživatelské rozhraní (Flet / Windows 11 Fluent)
 │   │   ├── __init__.py
 │   │   ├── app_layout.py   # Hlavní kostra okna (sidebar + hlavní pracovní plocha)
-│   │   ├── components.py   # Ovládací prvky (slidery, dropdowny, přepínače parametrů)[cite: 5]
-│   │   └── preview.py      # Náhledové okno, porovnání kvalit a statistiky exportu[cite: 5]
+│   │   ├── components.py   # Ovládací prvky (slidery, dropdowny, přepínače parametrů)
+│   │   └── preview.py      # Náhledové okno, porovnání kvalit a statistiky exportu
 │   │
-│   └── core/               # Zpracování obrazu a kompresní logika[cite: 5, 6]
+│   └── core/               # Zpracování obrazu a kompresní logika
 │       ├── __init__.py
-│       ├── loader.py       # Dekódování .dng přes rawpy na NumPy RGB bitmapu[cite: 5]
-│       ├── exporter_jpeg.py# Logika pro JPEG (YCbCr, 8x8 mřížky, DCT, Huffman)[cite: 9]
-│       ├── exporter_png.py # Logika pro PNG (Deflate, filtry, kvantizace barev)[cite: 7]
-│       ├── exporter_tiff.py# Logika pro TIFF (dělení na pásy, LZW, PackBits, Deflate)[cite: 10, 11]
-│       └── worker.py       # Asynchronní běh konverzí v samostatných vláknech[cite: 6]
+│       ├── loader.py       # Dekódování .dng přes rawpy na NumPy RGB bitmapu
+│       ├── exporter_jpeg.py# Logika pro JPEG (YCbCr, 8x8 mřížky, DCT, Huffman)
+│       ├── exporter_png.py # Logika pro PNG (Deflate, filtry, kvantizace barev)
+│       ├── exporter_tiff.py# Logika pro TIFF (dělení na pásy, LZW, PackBits, Deflate)
+│       └── worker.py       # Asynchronní běh konverzí v samostatných vláknech
 │
 └── tests/                  # Testovací skripty
     ├── __init__.py
