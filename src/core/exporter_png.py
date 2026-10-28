@@ -1,4 +1,6 @@
 """Saves a picture (NumPy array) as a PNG file."""
+from pathlib import Path
+
 from PIL import Image
 
 
@@ -10,4 +12,5 @@ def save_png(rgb, out_path, compress_level=6):
     compress_level: 0-9. Higher = smaller file but slower. Quality does NOT change.
     """
     image = Image.fromarray(rgb)
-    image.save(out_path, "PNG", compress_level=compress_level)
+    with Path(out_path).open("wb") as output:
+        image.save(output, "PNG", compress_level=compress_level)

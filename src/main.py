@@ -6,7 +6,7 @@ Run from the project ROOT folder (the one that contains src/):
 from core.worker import convert
 
 # Change this to a real .dng file on your computer
-SOURCE = r"C:\Users\mifim\Downloads\sample1.dng"
+SOURCE = r"c:\Users\mifim\Downloads\Raw zkouška\20250830_234959.dng"
 
 
 def show(result):

@@ -38,16 +38,18 @@ def save_tiff(rgb, out_path, compression="lzw"):
 
     if rgb.dtype == np.uint16:
         # 16-bit: tifffile writes the array exactly as it is
-        tifffile.imwrite(
-            out_path,
-            rgb,
-            photometric="rgb",
-            compression=TIFFFILE_COMPRESSION[compression],
-        )
+        with open(out_path, "wb") as output:
+            tifffile.imwrite(
+                output,
+                rgb,
+                photometric="rgb",
+                compression=TIFFFILE_COMPRESSION[compression],
+            )
     elif rgb.dtype == np.uint8:
         # 8-bit: Pillow is fine
-        Image.fromarray(rgb).save(
-            out_path, "TIFF", compression=PILLOW_COMPRESSION[compression]
-        )
+        with open(out_path, "wb") as output:
+            Image.fromarray(rgb).save(
+                output, "TIFF", compression=PILLOW_COMPRESSION[compression]
+            )
     else:
         raise TypeError(f"Unsupported array type: {rgb.dtype} (need uint8 or uint16)")
