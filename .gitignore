@@ -53,3 +53,9 @@ exports/
 # OS specific
 .DS_Store
 Thumbs.db
+
+src/.cache/
+src/settings.json
+
+*.dng
+test_export/
