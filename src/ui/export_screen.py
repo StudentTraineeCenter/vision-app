@@ -31,6 +31,7 @@ def create_export_screen(layout_manager) -> ft.Column:
     png_colors = {"value": "256"}
     png_color_mode = {"value": "RGB"}
     png_optimize = {"value": True}
+    shown_level = 9 if png_optimize["value"] else compress_level_value["value"]
 
     tiff_compression = {"value": "LZW"}
 
@@ -52,6 +53,10 @@ def create_export_screen(layout_manager) -> ft.Column:
 
     def set_subsampling(value):
         subsampling_value["value"] = value
+        update_setting_view(should_update=True)
+
+    def on_png_optimize_change(e):
+        png_optimize["value"] = e.control.value
         update_setting_view(should_update=True)
 
     def collapsible(title, content, expanded=False):
@@ -108,8 +113,9 @@ def create_export_screen(layout_manager) -> ft.Column:
 
             quality_slider = ft.Slider(
                 min=0,
-                max=100,
-                value=quality_value["value"],
+                max=95,
+                value=min(quality_value["value"], 95),
+                divisions=94,
                 active_color=COLOR_ACCENT,
                 on_change=on_quality_change,
                 tooltip="Controls the balance between image clarity and file size"
@@ -286,7 +292,7 @@ def create_export_screen(layout_manager) -> ft.Column:
 
         elif fmt == "PNG":
             compress_level_text = ft.Text(
-                str(compress_level_value["value"]),
+                str(shown_level),
                 color=COLOR_TEXT_PRIMARY,
                 size=12,
                 weight=ft.FontWeight.BOLD,
@@ -299,9 +305,10 @@ def create_export_screen(layout_manager) -> ft.Column:
             compress_level_slider = ft.Slider(
                 min=0,
                 max=9,
-                value=compress_level_value["value"],
+                value=shown_level,
                 divisions=9,
                 active_color=COLOR_ACCENT,
+                disabled=png_optimize["value"],
                 on_change=on_compress_level_change,
             )
 
@@ -337,9 +344,7 @@ def create_export_screen(layout_manager) -> ft.Column:
                     ft.Switch(
                         value=png_optimize["value"],
                         active_color=COLOR_ACCENT,
-                        on_change=lambda e: png_optimize.update(
-                            value=e.control.value
-                        ),
+                        on_change=on_png_optimize_change,
                     ),
                 ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             )
@@ -384,7 +389,8 @@ def create_export_screen(layout_manager) -> ft.Column:
                     options=[
                         ft.dropdown.Option("RGB"), 
                         ft.dropdown.Option("RGBA"), 
-                        ft.dropdown.Option("Palette")
+                        ft.dropdown.Option("Palette"),
+                        ft.dropdown.Option("Grayscale"),
                     ],
                     bgcolor=COLOR_BG_CARD,
                     color=COLOR_TEXT_PRIMARY,
@@ -420,6 +426,7 @@ def create_export_screen(layout_manager) -> ft.Column:
                     options=[
                         ft.dropdown.Option("LZW"),
                         ft.dropdown.Option("Deflate"),
+                        ft.dropdown.Option("Packbits"),
                         ft.dropdown.Option("None"),
                     ],
                     bgcolor=COLOR_BG_CARD,
