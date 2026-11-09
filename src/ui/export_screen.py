@@ -14,6 +14,7 @@ import asyncio
 import time
 import re
 from pathlib import Path
+import os
 
 from core.loader import load_raw_image
 from core.exporter_jpeg import export_jpeg
@@ -131,9 +132,9 @@ def create_export_screen(layout_manager) -> ft.Column:
                 quality_text.update()
 
             quality_slider = ft.Slider(
-                min=0,
+                min=1,
                 max=95,
-                value=min(quality_value["value"], 95),
+                value=min(max(quality_value["value"], 1), 95),
                 divisions=94,
                 active_color=COLOR_ACCENT,
                 on_change=on_quality_change,
@@ -592,19 +593,52 @@ def create_export_screen(layout_manager) -> ft.Column:
 
     busy = {"value": False}
     progress_bar = ft.ProgressBar(color=COLOR_ACCENT, visible=False)
-    status_text = ft.Text("", size=11, color=COLOR_TEXT_SECONDARY)
     export_text = ft.Text("Export", color="#111111", weight=ft.FontWeight.W_500, size=14)
 
-    def set_busy(flag, msg=""):
+    last_dir = {"value": None}
+
+    status_text = ft.Text(
+        "", size=11, color=COLOR_TEXT_SECONDARY,
+        max_lines=3, overflow=ft.TextOverflow.ELLIPSIS,
+    )
+
+    def set_status(msg, error=False):
+        status_text.value = msg
+        status_text.tooltip = msg
+        status_text.color = ft.Colors.RED_300 if error else COLOR_TEXT_SECONDARY
+        safe_update(status_text)
+
+    def set_busy(flag, msg=None):
         busy["value"] = flag
         progress_bar.visible = flag
-        status_text.value = msg
         export_text.value = "Exporting…" if flag else "Export"
         export_btn.opacity = 0.6 if flag else 1
+        if msg is not None:
+            set_status(msg)
         safe_update(progress_bar)
-        safe_update(status_text)
         safe_update(export_btn)
 
+    def open_folder(e):
+        if last_dir["value"]:
+            os.startfile(last_dir["value"])
+
+    open_btn = ft.Container(
+        content=ft.Row(
+            [
+                ft.Icon(ft.Icons.FOLDER_OPEN_OUTLINED, size=16, color=COLOR_TEXT_PRIMARY),
+                ft.Text("Open folder", size=12, color=COLOR_TEXT_PRIMARY),
+            ],
+            alignment=ft.MainAxisAlignment.CENTER,
+            spacing=8,
+        ),
+        bgcolor=COLOR_BG_CARD,
+        border=ft.Border.all(1, COLOR_BORDER),
+        border_radius=6,
+        padding=10,
+        ink=True,
+        visible=False,
+        on_click=open_folder,
+    )
     
     async def export_image(e):
 
@@ -634,6 +668,8 @@ def create_export_screen(layout_manager) -> ft.Column:
             return
 
         set_busy(True, "Exporting...")
+        open_btn.visible = False
+        safe_update(open_btn)
 
 
         try:
@@ -743,8 +779,10 @@ def create_export_screen(layout_manager) -> ft.Column:
                 make_exported_preview, output_path
             )
             print(f"Export completed: {output_path}")
-            status_text.value = "Export completed"
-            safe_update(status_text)
+            last_dir["value"] = str(Path(output_path).parent)
+            set_status("Saved: " + Path(output_path).name)
+            open_btn.visible = True
+            safe_update(open_btn)
 
             print("File exists:", Path(output_path).exists())
 
@@ -756,6 +794,7 @@ def create_export_screen(layout_manager) -> ft.Column:
         except Exception as ex:
 
             print("EXPORT ERROR:", repr(ex))
+            set_status(f"Export failed: {ex}", error=True)
 
         finally:
             set_busy(False)
@@ -834,6 +873,8 @@ def create_export_screen(layout_manager) -> ft.Column:
             progress_bar,
 
             status_text,
+
+            open_btn,
 
             exif_box,
 

@@ -116,7 +116,7 @@ def create_compare_screen(layout_manager) -> ft.Container:
         change = (new_bytes / orig_bytes - 1) * 100
         smaller = change <= 0
         saving_title = "Smaller than original" if smaller else "Larger than original"
-        saving_value = f"{'−' if smaller else '+'}{abs(change):.0f} %"
+        saving_value = f"{'−' if smaller else '+'}{abs(change):.1f} %"
         saving_color = COLOR_ACCENT if smaller else "#ff9a6b"
         saving_detail = f"{fmt_size(orig_bytes)} → {fmt_size(new_bytes)}"
         exp_format, exp_size = info["format"], fmt_size(new_bytes)
@@ -363,7 +363,7 @@ def create_compare_screen(layout_manager) -> ft.Container:
         content=ft.Column(
             [
                 ft.Text(saving_title, color=COLOR_TEXT_SECONDARY, size=15),
-                ft.Text(saving_value, color=saving_color, size=60, weight=ft.FontWeight.BOLD),
+                ft.Text(saving_value, color=saving_color, size=50, weight=ft.FontWeight.BOLD),
                 ft.Text(saving_detail, color=COLOR_TEXT_SECONDARY, size=15),
             ],
             spacing=4,

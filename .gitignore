@@ -59,3 +59,6 @@ src/settings.json
 
 *.dng
 test_export/
+
+main.spec
+
