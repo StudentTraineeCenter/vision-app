@@ -2,6 +2,19 @@ from pathlib import Path
 import rawpy
 from PIL import Image
 
+
+Image.MAX_IMAGE_PIXELS = None
+CACHE_DIR = Path(__file__).resolve().parent.parent / ".cache"
+
+def make_exported_preview(export_path, max_side=1600):
+    CACHE_DIR.mkdir(exist_ok=True)
+    out = CACHE_DIR / "exported_preview.jpg"
+    with Image.open(export_path) as im:
+        im = im.convert("RGB")
+        im.thumbnail((max_side, max_side))
+        im.save(out, "JPEG", quality=85)
+    return str(out)
+
 def _out_path(dng_path: str) -> Path:
     cache_dir = Path(__file__).resolve().parent.parent / ".cache"
     cache_dir.mkdir(exist_ok=True)

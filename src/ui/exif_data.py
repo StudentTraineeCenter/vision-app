@@ -30,7 +30,18 @@ def read_exif(path: str) -> dict:
 
         date = tags.get("EXIF DateTimeOriginal") or tags.get("Image DateTime")
         if date:
-            info["Date"] = str(date).replace(":", "-", 2)
+            date_str = str(date).strip()
+            # Rozdělíme datum a čas podle mezery (např. "2026:11:09 14:30:00")
+            parts = date_str.split(" ")
+            date_part = parts[0]
+            time_part = parts[1] if len(parts) > 1 else ""
+            date_pieces = date_part.split(":")
+            if len(date_pieces) == 3:
+                year, month, day = date_pieces
+                formatted_date = f"{day}.{month}.{year}"
+                info["Date"] = f"{formatted_date} {time_part}" if time_part else formatted_date
+            else:
+                info["Date"] = date_str
 
         if "EXIF ISOSpeedRatings" in tags:
             info["ISO"] = str(tags["EXIF ISOSpeedRatings"])

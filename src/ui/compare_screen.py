@@ -13,6 +13,8 @@ from .components import (
     COLOR_SUCCESS
 )
 
+from .exif_data import read_exif
+
 def create_compare_screen(layout_manager) -> ft.Container:
 
     def read_bytes(path):
@@ -90,12 +92,21 @@ def create_compare_screen(layout_manager) -> ft.Container:
     if layout_manager.selected_file:
         p = Path(layout_manager.selected_file)
         st = p.stat()
-        orig_name = p.suffix.lstrip(".") or "-"
+        orig_name = p.suffix.lstrip(".").upper() or "-"
         orig_size = f"{st.st_size / 1024 / 1024:.1f} MB"
-        orig_date = date.fromtimestamp(st.st_mtime).strftime("%d.%m.%Y")
+        exif_info = read_exif(layout_manager.selected_file)
+        orig_date = exif_info.get("Date", "-")
 
     def fmt_size(b):
         return f"{b / 1024 / 1024:.1f} MB" if b >= 1024 * 1024 else f"{b / 1024:.0f} KB"
+
+    def fmt_time(s):
+        if s < 1:
+            return f"{s * 1000:.0f} ms"
+        if s < 60:
+            return f"{s:.1f} s"
+        m, sec = divmod(round(s), 60)
+        return f"{m} min {sec} s"
 
     orig_bytes = Path(layout_manager.selected_file).stat().st_size if layout_manager.selected_file else None
     info = layout_manager.last_export
@@ -109,7 +120,7 @@ def create_compare_screen(layout_manager) -> ft.Container:
         saving_color = COLOR_ACCENT if smaller else "#ff9a6b"
         saving_detail = f"{fmt_size(orig_bytes)} → {fmt_size(new_bytes)}"
         exp_format, exp_size = info["format"], fmt_size(new_bytes)
-        exp_time = f"{info['time_s']:.1f} s"
+        exp_time = fmt_time(info["time_s"])
     else:
         saving_title, saving_value, saving_color = "Size change", "—", COLOR_TEXT_SECONDARY
         saving_detail = "Export a file first"

@@ -7,11 +7,18 @@ from .components import (
     COLOR_ACCENT,
     COLOR_BORDER
 )
-from .preview import make_preview
+from .preview import make_preview, make_exported_preview
 from .histogram import make_histogram
 from .exif_data import read_exif
 import asyncio
+import time
+import re
 from pathlib import Path
+
+from core.loader import load_raw_image
+from core.exporter_jpeg import export_jpeg
+from core.exporter_png import export_png
+from core.exporter_tiff import export_tiff
 
 def create_export_screen(layout_manager) -> ft.Column:
     def safe_update(control):
@@ -19,6 +26,18 @@ def create_export_screen(layout_manager) -> ft.Column:
             control.update()
         except RuntimeError:
             pass
+
+    def clean_name(text, fallback):
+        text = re.sub(r'[\\/:*?"<>|]', "", text).strip().rstrip(".")
+        return text or fallback
+
+    def unique_path(folder, name, ext):
+        p = Path(folder) / f"{name}.{ext}"
+        i = 1
+        while p.exists():
+            p = Path(folder) / f"{name}_{i}.{ext}"
+            i += 1
+        return str(p)
     #hodnoty slovniku pro nasledny vyber nastaveni
     current_format = {"value": "JPEG"}
 
@@ -537,6 +556,25 @@ def create_export_screen(layout_manager) -> ft.Column:
         on_click=choose_destination,
     )
 
+    default_name = Path(layout_manager.selected_file).stem if layout_manager.selected_file else ""
+
+    name_field = ft.TextField(
+        label="File name",
+        value=default_name,
+        text_size=12,
+        dense=True,
+        color=COLOR_TEXT_PRIMARY,
+        border_color=COLOR_BORDER,
+    )
+
+    name_card = ft.Container(
+        content=name_field,
+        bgcolor=COLOR_BG_CARD,
+        padding=12,
+        border_radius=8,
+        border=ft.Border.all(1, COLOR_BORDER),
+    )
+
     destination_card = ft.Container(
         content=ft.Column(
             [
@@ -552,126 +590,401 @@ def create_export_screen(layout_manager) -> ft.Column:
         border=ft.Border.all(1, COLOR_BORDER),
     )
 
+    busy = {"value": False}
+    progress_bar = ft.ProgressBar(color=COLOR_ACCENT, visible=False)
+    status_text = ft.Text("", size=11, color=COLOR_TEXT_SECONDARY)
+    export_text = ft.Text("Export", color="#111111", weight=ft.FontWeight.W_500, size=14)
+
+    def set_busy(flag, msg=""):
+        busy["value"] = flag
+        progress_bar.visible = flag
+        status_text.value = msg
+        export_text.value = "Exporting…" if flag else "Export"
+        export_btn.opacity = 0.6 if flag else 1
+        safe_update(progress_bar)
+        safe_update(status_text)
+        safe_update(export_btn)
+
+    
+    async def export_image(e):
+
+        if busy["value"]:
+            return
+
+        print("EXPORT BUTTON CLICKED")
+        print("Selected file:", layout_manager.selected_file)
+        print("Export directory:", export_dir["value"])
+        print("Selected format:", current_format["value"])
+
+        if not layout_manager.selected_file:
+
+            print("No input file selected")
+            status_text.value = "No input file selected"
+            safe_update(status_text)
+
+            return
+
+
+        if not export_dir["value"]:
+
+            print("Choose export destination first")
+            status_text.value = "Choose export destination first"
+            safe_update(status_text)
+
+            return
+
+        set_busy(True, "Exporting...")
+
+
+        try:
+            t0 = time.perf_counter()
+            image = await asyncio.to_thread(
+
+                load_raw_image,
+
+                layout_manager.selected_file
+
+            )
+
+            
+
+            print("RAW IMAGE LOADED SUCCESSFULLY")
+
+
+            fmt = current_format["value"]
+
+            filename = clean_name(name_field.value, Path(layout_manager.selected_file).stem)
+
+            status_text.value = f"Saving {fmt}"
+            safe_update(status_text)
+
+            if fmt == "JPEG":
+
+                output_path = unique_path(export_dir["value"], filename, "jpg") 
+
+                print("JPEG OUTPUT PATH:", output_path)
+
+
+                await asyncio.to_thread(
+
+                    export_jpeg,
+
+                    image,
+
+                    output_path,
+
+                    quality=quality_value["value"],
+
+                    subsampling=subsampling_value["value"],
+
+                    optimize=jpeg_optimize["value"],
+
+                    progressive=jpeg_progressive["value"]
+
+                )
+
+
+            elif fmt == "PNG":
+
+                output_path = unique_path(export_dir["value"], filename, "png") 
+
+                print("PNG OUTPUT PATH:", output_path)
+
+
+                await asyncio.to_thread(
+
+                    export_png,
+
+                    image,
+
+                    output_path,
+
+                    compress_level=compress_level_value["value"],
+
+                    optimize=png_optimize["value"],
+
+                    colors=png_colors["value"],
+
+                    color_mode=png_color_mode["value"]
+
+                )
+
+
+            elif fmt == "TIFF":
+
+                output_path = unique_path(export_dir["value"], filename, "tiff") 
+
+                print("TIFF OUTPUT PATH:", output_path)
+
+
+                await asyncio.to_thread(
+
+                    export_tiff,
+
+                    image,
+
+                    output_path,
+
+                    compression=tiff_compression["value"]
+
+                )
+
+            elapsed = time.perf_counter() - t0
+            layout_manager.last_export = {
+                "format": fmt,
+                "size_bytes": Path(output_path).stat().st_size,
+                "time_s": elapsed,
+                "path": output_path,
+            }
+
+            status_text.value = "Creating preview"
+            safe_update(status_text)
+            layout_manager.exported_preview = await asyncio.to_thread(
+                make_exported_preview, output_path
+            )
+            print(f"Export completed: {output_path}")
+            status_text.value = "Export completed"
+            safe_update(status_text)
+
+            print("File exists:", Path(output_path).exists())
+
+            if Path(output_path).exists():
+
+                print("File size:", Path(output_path).stat().st_size, "bytes")
+
+
+        except Exception as ex:
+
+            print("EXPORT ERROR:", repr(ex))
+
+        finally:
+            set_busy(False)
+
 
     export_btn = ft.Container(
+
         content=ft.Row([
+
             ft.Icon(ft.Icons.DOWNLOAD, size=18, color="#111111"),
+
             ft.Text("Export", color="#111111", weight=ft.FontWeight.W_500, size=14),
+
             ],
+
             alignment=ft.MainAxisAlignment.CENTER,
+
             spacing=8,
+
         ),
+
         bgcolor=COLOR_ACCENT,
+
         height=44,
+
         border_radius=8,
+
         ink=True,
-        on_click=lambda _: print("Export spuštěn!"),  # LOGIKA HERE POTOM!!!
+
+        on_click=export_image,
+
     )
+
 
     exif_column = ft.Column([], spacing=3)
 
+
     def show_exif(info):
+
         exif_column.controls = [
+
             ft.Text(f"{k}: {v}", color=COLOR_TEXT_PRIMARY, size=11) for k, v in info.items()
+
         ]
+
         safe_update(exif_column)
+
 
     show_exif(read_exif(""))
 
+
     exif_box = collapsible("EXIF Data", exif_column)
 
+
     histogram_image = ft.Container(height=90)
+
 
     histogram_box = collapsible("RGB Histogram", histogram_image)
 
 
+
     right_panel = ft.Container(
+
         content=ft.Column([
+
             format_row,
+
             settings_content_container,
+
+            name_card,
+
             destination_card,
+
             export_btn,
+
+            progress_bar,
+
+            status_text,
+
             exif_box,
+
             histogram_box,
+
         ], spacing=12, scroll=ft.ScrollMode.AUTO, horizontal_alignment=ft.CrossAxisAlignment.STRETCH),
+
         width=300,
+
         bgcolor=COLOR_BG_LAYER,
+
         padding=15,
+
         border_radius=12,
+
         border=ft.Border.all(1, COLOR_BORDER),
+
     )
+
 
     preview_loading = ft.ProgressRing(visible=False, color=COLOR_ACCENT)
 
+
     preview_holder = ft.Container(
+
         expand=True,
+
         bgcolor="#1b1b1b",
+
         alignment=ft.Alignment.CENTER,
+
         content=ft.Text("Load a DNG file first", color=COLOR_TEXT_SECONDARY, size=12)
+
     )
 
+
     def show_image(path):
+
         with open(path, "rb") as f:
+
             data = f.read()
+
         preview_holder.content = ft.Image(src=data, fit=ft.BoxFit.CONTAIN, expand=True)
+
         preview_holder.alignment = None
+
         preview_holder.padding = 16
+
         safe_update(preview_holder)
 
+
         histogram_image.content = ft.Image(
+
             src=make_histogram(path), fit=ft.BoxFit.FILL, height=90,
+
         )
+
         safe_update(histogram_image)
 
 
+
     async def load_preview():
+
         print("LOAD_PREVIEW SPUSTENY")
+
         if layout_manager.preview_path:
+
             show_image(layout_manager.preview_path)
+
             return
+
         preview_holder.content = preview_loading
+
         preview_loading.visible = True
+
         safe_update(preview_holder)
 
+
         try:
+
             path = await asyncio.to_thread(make_preview, layout_manager.selected_file)
+
             layout_manager.preview_path = path
+
             show_image(path)
+
         except Exception as ex:
+
             preview_holder.content = ft.Text(f"Preview failed: {ex}", color=COLOR_TEXT_SECONDARY, size=12)
+
             safe_update(preview_holder)
 
+
     async def load_exif():
+
         info = await asyncio.to_thread(read_exif, layout_manager.selected_file)
+
         show_exif(info)
 
+
     preview_area = ft.Container(
+
         content=preview_holder,
+
         expand=True,
+
         border_radius=12,
+
         clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+
         border=ft.Border.all(1, COLOR_BORDER),
+
     )
 
+
     if layout_manager.selected_file:
+
         layout_manager.page.run_task(load_preview)
+
         layout_manager.page.run_task(load_exif)
 
 
+
     content_row = ft.Row([
-        preview_area, right_panel], 
-        expand=True, 
+
+        preview_area, right_panel],
+
+        expand=True,
+
         spacing=15,
+
         vertical_alignment=ft.CrossAxisAlignment.STRETCH,
+
         )
+
 
     file_name = Path(layout_manager.selected_file).name if layout_manager.selected_file else "No file loaded"
 
+
     header = ft.Column(
+
         [
+
             ft.Text("Export", size=24, weight=ft.FontWeight.W_600, color=COLOR_TEXT_PRIMARY),
+
             ft.Text(file_name, size=12, color=COLOR_TEXT_SECONDARY),
+
         ],
+
         spacing=2,
+
     )
+
     return ft.Column([header, content_row], spacing=15, expand=True)

@@ -30,6 +30,8 @@ def create_home_screen(layout_manager) -> ft.Column:
         if files:
             path = files[0].path
             layout_manager.selected_file = path
+            layout_manager.exported_preview = None
+            layout_manager.last_export = None
             try:
                 layout_manager.preview_path = await asyncio.to_thread(make_preview, path)
             except Exception as ex:
@@ -40,7 +42,9 @@ def create_home_screen(layout_manager) -> ft.Column:
 
     def open_file(path):
         layout_manager.selected_file = path
-        layout_manager.preview_path = None     
+        layout_manager.preview_path = None
+        layout_manager.exported_preview = None
+        layout_manager.last_export = None     
         layout_manager.navigate_to("export")
 
     upload_zone = ft.Container(

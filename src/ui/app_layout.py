@@ -28,6 +28,8 @@ class AppLayout:
         self.selected_file = None
         self.preview_path = None
         self.exported_file = None
+        self.exported_preview = None
+        self.last_export = None
 
         self.last_export = {"format": "JPEG", "size_bytes": 2_700_000, "time_s": 6.7, "path": ""}
 
