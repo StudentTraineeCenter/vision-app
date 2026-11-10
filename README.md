@@ -2,7 +2,6 @@
 
 Desktopová aplikace pro Windows 11, která načte RAW soubor (`.dng`), ukáže jeho náhled, EXIF a histogram a vyexportuje ho do **JPEG**, **PNG** nebo **TIFF** s nastavitelnými parametry. Součástí je porovnání před/po s úsporou místa a časem exportu.
 
-Projekt vznikl v rámci A&I Labs.
 
 ## Funkce
 
