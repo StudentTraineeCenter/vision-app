@@ -1,77 +1,65 @@
-# Vision 📸
+# Vision
 
-**Vision** je desktopová aplikace určená pro operační systém Windows 11, která slouží k načítání digitálních fotografií ve formátu RAW (`.dng`), jejich zpracování a následnému exportu do tří cílových formátů: **JPEG, PNG a TIFF** s detailní možností konfigurace kompresních parametrů.
+Desktopová aplikace pro Windows 11, která načte RAW soubor (`.dng`), ukáže jeho náhled, EXIF a histogram a vyexportuje ho do **JPEG**, **PNG** nebo **TIFF** s nastavitelnými parametry. Součástí je porovnání před/po s úsporou místa a časem exportu.
+
+Projekt vznikl v rámci A&I Labs.
+
+## Funkce
+
+- Načtení `.dng` (včetně telefonních DNG, např. Samsung Galaxy S25+)
+- Náhled, **RGB histogram** a **EXIF** údaje
+- Export do **JPEG / PNG / TIFF** s parametry formátu
+- Vlastní název souboru, výběr cílové složky, nic se nepřepisuje (`_1`, `_2`)
+- **Compare:** slider před/po, úspora místa a čas exportu
+- Poslední otevřené soubory (Recents), uložení nastavení
+
+## Parametry exportu
+
+| Formát | Parametry |
+|---|---|
+| **JPEG** | kvalita (1–95), subsampling (4:4:4 / 4:2:2 / 4:2:0), optimize, progressive |
+| **PNG** | compress level (0–9), optimize, počet barev, barevný režim (RGB, RGBA, Grayscale, Palette) |
+| **TIFF** | komprese (LZW, Deflate, Packbits, None) |
 
 
----
+## Rozdíly formátů ve zkratce
 
-## 🛠️ Tech Stack
+| | JPEG | PNG | TIFF |
+|---|---|---|---|
+| Komprese | ztrátová | bezeztrátová | bezeztrátová / žádná |
+| Velikost fotky | malá | velká | největší |
+| Průhlednost | ne | ano | ano |
+| Využití | fotky, web | grafika, text, loga | archiv, tisk, úpravy |
 
-- **Jazyk:** Python 3.10+
-- **Uživatelské rozhraní:** [Flet](https://flet.dev/) (framework založený na Flutteru s podporou Fluent Designu pro Windows 11)
-- **Dekódování RAW:** `rawpy` (LibRaw wrapper) pro převod DNG na NumPy bitmapu v paměti
-- **Zpracování obrazu & Komprese:** `Pillow` + `NumPy`
-- **Asynchronní správa:** Běh náročných výpočtů v samostatných vláknech na pozadí (non-blocking UI)
+Příklad z naší fotky (8160 × 6120): DNG 60,8 MB → JPEG 2,0 MB (−96,7 %), export 9,4 s.
 
----
+## Technologie
 
-## ⚙️ Podporované Formáty a Parametry
+Python · [Flet](https://flet.dev) 1.0.5 (GUI) · rawpy · Pillow · tifffile · imagecodecs · exifread
 
-### 1. JPEG
-- **Quality:** Nastavení kvality obrazu (0–100 %)
-- **Subsampling:** Barevné podvzorkování (`4:4:4`, `4:2:2`, `4:2:0`)
-- **Optimize:** Sestavení Huffmanových tabulek na míru obrázku
-- **Progressive:** Progresivní ukládání po vrstvách
+## Instalace a spuštění
 
-### 2. PNG
-- **Compress Level:** Úroveň komprese Deflate (0–9)
-- **Optimize:** Aplikace optimálních pre-processing filtrů
-- **Počet barev:** Redukce barev (kvantizace / paleta)
-- **Barevný režim:** Převod mezi RGB, RGBA a Grayscale
+Doporučujeme **Python 3.14 z [python.org](https://www.python.org/downloads/)**.
 
-### 3. TIFF
-- **Volba komprese:** Výběr metody komprese (`None`, `LZW`, `DEFLATE`, `PackBits`) s páskovým zpracováním
-
----
-
-##  Jak aplikaci spustit
-
-### 1. Klonování repozitáře
-```bash
-git clone [https://github.com/THartigova/vision-app.git](https://github.com/THartigova/vision-app.git)
+```powershell
+git clone <URL repozitáře>
 cd vision-app
+py -3.14 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python src/main.py
+```
 
-##  Detailní Architektura a Struktura Projektu
+## Struktura projektu
 
-Struktura repozitáře je navržena tak, aby striktně oddělovala uživatelské rozhraní (UI) od backendové výpočetní logiky a kompresních algoritmů.
-
-```text
+```
 vision-app/
-├── .gitignore              # Ignorované soubory (venv, cache, výstupní fotky)
-├── README.md               # Dokumentace a návod k projektu
-├── requirements.txt        # Seznam závislostí pro pip
-│
-├── assets/                 # Statické zdroje a testovací data
-│   └── sample.dng          # Vzorový .dng soubor pro vývoj a testování
-│
-├── src/                    # Hlavní zdrojový kód aplikace
-│   ├── main.py             # Vstupní bod – inicializace a spustitelná Flet aplikace
-│   │
-│   ├── ui/                 # Uživatelské rozhraní (Flet / Windows 11 Fluent)
-│   │   ├── __init__.py
-│   │   ├── app_layout.py   # Hlavní kostra okna (sidebar + hlavní pracovní plocha)
-│   │   ├── components.py   # Ovládací prvky (slidery, dropdowny, přepínače parametrů)
-│   │   └── preview.py      # Náhledové okno, porovnání kvalit a statistiky exportu
-│   │
-│   └── core/               # Zpracování obrazu a kompresní logika
-│       ├── __init__.py
-│       ├── loader.py       # Dekódování .dng přes rawpy na NumPy RGB bitmapu
-│       ├── exporter_jpeg.py# Logika pro JPEG (YCbCr, 8x8 mřížky, DCT, Huffman)
-│       ├── exporter_png.py # Logika pro PNG (Deflate, filtry, kvantizace barev)
-│       ├── exporter_tiff.py# Logika pro TIFF (dělení na pásy, LZW, PackBits, Deflate)
-│       └── worker.py       # Asynchronní běh konverzí v samostatných vláknech
-│
-└── tests/                  # Testovací skripty
-    ├── __init__.py
-    ├── test_loader.py      # Testy načítání DNG souborů
-    └── test_exporters.py   # Testy komprese a správnosti výstupních formátů
+├── src/
+│   ├── main.py            # vstupní bod
+│   ├── ui/                # obrazovky (Home, Export, Compare, Settings)
+│   ├── core/              # načtení DNG a exportéry (JPEG, PNG, TIFF)
+│   └── settings_store.py  # uložení nastavení a recents
+├── tests/
+├── requirements.txt
+└── README.md
+```
